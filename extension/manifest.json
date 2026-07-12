@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Implemento",
+  "description": "Reddit-native market discovery, solution planning, and post suggestions",
+  "version": "1.0.0",
+  "permissions": ["storage", "sidePanel", "tabs"],
+  "host_permissions": ["https://*.reddit.com/*"],
+  "optional_host_permissions": ["https://*/*", "http://*/*"],
+  "background": {
+    "service_worker": "src/background/service-worker.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*.reddit.com/*"],
+      "js": ["src/content/reddit.ts"],
+      "run_at": "document_idle"
+    }
+  ],
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  },
+  "action": {
+    "default_title": "Open Implemento"
+  },
+  "icons": {
+    "16": "public/icons/icon-16.png",
+    "48": "public/icons/icon-48.png",
+    "128": "public/icons/icon-128.png"
+  }
+}

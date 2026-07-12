@@ -1,0 +1,6 @@
+---
+description: Enforce AGENTS.md-first reading after each user message
+alwaysApply: true
+---
+
+Each user message creates a new turn. Read `/AGENTS.md` first after that message, then follow its per-turn read order, including active instructions, plans, blockers, and referenced files.

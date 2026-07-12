@@ -1,0 +1,22 @@
+{
+  "themes": [
+    {
+      "title": "Manual research workflow fragmentation",
+      "summary": "Founders lose context when moving from Reddit threads to planning tools.",
+      "severity": 8,
+      "frequency": "high",
+      "evidenceIds": ["evidence-1"],
+      "inferenceFlag": false,
+      "workaroundPhrases": ["spreadsheets", "copy into ChatGPT"],
+      "buyerSignals": ["would pay for better workflow"]
+    }
+  ],
+  "communitySuggestions": [
+    {
+      "subreddit": "SaaS",
+      "tone": "Founder-to-founder problem validation",
+      "postPatterns": ["Pain-first threads"],
+      "promoPolicy": "Disclose affiliation"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "project_slug": "reddit-workflow-planner",
+  "project_title": "Reddit Workflow Planner",
+  "executive_decision": "Build a Chrome extension that turns Reddit pain evidence into phased implementation plans.",
+  "evidence_method": "Pain themes derived from pinned Reddit evidence in a research session.",
+  "intelligence_report": "Founders report workflow fragmentation between Reddit research and planning tools.",
+  "user_problem": "Solo founders lose context when moving from Reddit threads to planning artifacts.",
+  "competitive_landscape": "Pain monitoring tools exist but do not produce methodology-backed phase plans.",
+  "uvp": "Browser-native pipeline from Reddit evidence to implemento-standard blueprints and phase 0 plans.",
+  "validation_experiments": "Measure time-to-first-export and blind review of blueprint actionability.",
+  "prd": "Capture evidence, discover pain themes, generate blueprint and phase 0, export markdown.",
+  "mvp_scope": "Chrome MV3 extension with side panel, BYOK LLM, local storage. Exclude auto-posting and cloud sync.",
+  "architecture": "Content script + service worker + side panel; local storage; LLM from service worker.",
+  "interfaces": "Message bus between panel, worker, and content script; template engine for exports.",
+  "security": "API keys in chrome.storage.local only; sanitize Reddit content; MV3 CSP.",
+  "delivery_map": "Phase 0 foundations, phase 1 capture, phase 2 discovery, phase 3 planning, phase 4 posts, phase 5 release.",
+  "gtm": "Problem-first posts in r/SaaS and r/sideproject; transparent build journey.",
+  "risks": "DOM changes, LLM template drift, crowded pain-point market.",
+  "sources": "Session pain themes and pinned Reddit evidence.",
+  "handoff": "Phase 0 establishes extension scaffold, template engine, and repo layout for later phases."
+}

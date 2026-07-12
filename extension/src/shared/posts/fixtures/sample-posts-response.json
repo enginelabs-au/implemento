@@ -1,0 +1,26 @@
+{
+  "subreddit": "SaaS",
+  "drafts": [
+    {
+      "archetype": "problem-first",
+      "title": "How do you go from Reddit threads to an actual build plan?",
+      "body": "I've been collecting pain points from r/SaaS and keep losing context when I move to planning tools. Curious how others structure this workflow without endless spreadsheets.",
+      "riskNotes": "Keep discussion pain-focused; avoid product links in top comment.",
+      "promoRisk": "low"
+    },
+    {
+      "archetype": "transparent-build",
+      "title": "Building a browser extension to turn Reddit research into phased plans",
+      "body": "I'm documenting the tradeoffs of DOM-first capture vs API access, and why I'm packaging outputs as implemento-style blueprints. Would love feedback on the methodology.",
+      "riskNotes": "Disclose builder affiliation; follow r/SaaS self-promo norms.",
+      "promoRisk": "medium"
+    },
+    {
+      "archetype": "resource-value",
+      "title": "Template pack: blueprint + phase 0 structure for Reddit-sourced product research",
+      "body": "Sharing the markdown structure I use to go from pain themes to a phase 0 foundations plan. Free template; restrained mention of the tool I'm building.",
+      "riskNotes": "Lead with the free resource; single disclosure line at end.",
+      "promoRisk": "medium"
+    }
+  ]
+}

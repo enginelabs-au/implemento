@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Implemento</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Implemento</h1>
+        <p class="tagline">Reddit pain → phased plan → post</p>
+      </header>
+
+      <section aria-labelledby="settings-heading">
+        <h2 id="settings-heading">LLM settings</h2>
+        <div id="settings-panel"></div>
+        <p id="settings-feedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <section aria-labelledby="discovery-heading">
+        <h2 id="discovery-heading">Discovery</h2>
+        <div id="discovery-panel"></div>
+        <p id="discovery-feedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <section aria-labelledby="planning-heading">
+        <h2 id="planning-heading">Planning</h2>
+        <div id="planning-panel"></div>
+        <p id="planning-feedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <section aria-labelledby="posts-heading">
+        <h2 id="posts-heading">Post drafts</h2>
+        <div id="posts-panel"></div>
+        <p id="posts-feedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <section aria-labelledby="profiles-heading">
+        <h2 id="profiles-heading">Community profiles</h2>
+        <div id="profiles-panel"></div>
+      </section>
+
+      <section aria-labelledby="session-heading">
+        <h2 id="session-heading">Research session</h2>
+        <div id="session-controls"></div>
+      </section>
+
+      <section aria-labelledby="data-heading">
+        <h2 id="data-heading">Data &amp; portability</h2>
+        <div id="bundle-panel"></div>
+        <p id="bundle-feedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <section aria-labelledby="page-heading">
+        <h2 id="page-heading">Current Reddit page</h2>
+        <div id="page-card"></div>
+        <div class="button-row">
+          <button id="refresh-page" type="button" class="secondary">Refresh page context</button>
+        </div>
+      </section>
+
+      <section aria-labelledby="capture-heading">
+        <h2 id="capture-heading">Capture</h2>
+        <div class="button-row">
+          <button id="pin-post" type="button">Pin post</button>
+          <button id="pin-selection" type="button" class="secondary">Pin selection</button>
+        </div>
+        <div id="comment-pin-list"></div>
+        <p id="capture-feedback" role="status" aria-live="polite"></p>
+      </section>
+
+      <section aria-labelledby="evidence-heading">
+        <h2 id="evidence-heading">Pinned evidence</h2>
+        <div id="evidence-list"></div>
+      </section>
+
+      <section aria-labelledby="manual-heading">
+        <h2 id="manual-heading">Manual paste fallback</h2>
+        <form id="manual-form">
+          <label>
+            Subreddit
+            <input id="manual-subreddit" name="subreddit" type="text" placeholder="SaaS" />
+          </label>
+          <label>
+            URL
+            <input id="manual-url" name="url" type="url" placeholder="https://reddit.com/..." />
+          </label>
+          <label>
+            Quote
+            <textarea id="manual-quote" name="quote" rows="4" placeholder="Paste pain evidence…"></textarea>
+          </label>
+          <button type="submit">Pin manual evidence</button>
+        </form>
+      </section>
+
+      <section aria-labelledby="actions-heading">
+        <h2 id="actions-heading">Developer</h2>
+        <button id="export-sample" type="button" class="secondary">
+          Export sample phase 0 plan
+        </button>
+        <p id="export-feedback" role="status" aria-live="polite"></p>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

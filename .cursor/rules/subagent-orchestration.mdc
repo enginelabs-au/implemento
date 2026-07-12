@@ -1,0 +1,6 @@
+---
+description: Bounded autonomous sub-agent delegation and integration
+alwaysApply: true
+---
+
+When delegation is useful, follow `/instructions/SUBAGENTS.md`. Give sub-agents bounded scope, context, file ownership, output format, and validation requirements. The lead agent must inspect, integrate, and verify all outputs.
