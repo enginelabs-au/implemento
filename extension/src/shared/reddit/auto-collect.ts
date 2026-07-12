@@ -18,6 +18,7 @@ export interface CollectibleEvidence {
 export interface AutoCollectInput {
   query?: string;
   subreddits?: string[];
+  runId?: string;
 }
 
 export interface AutoCollectPlan {

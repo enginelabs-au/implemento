@@ -335,7 +335,7 @@ export function renderDiscoveryUi(
   const intro = document.createElement("p");
   intro.className = "muted";
   intro.textContent =
-    "Implemento searches Reddit for you — enter a topic and subreddits, then run discovery.";
+    "Implemento searches Reddit for you — enter a topic and subreddits. Discover pains replaces prior auto-collected evidence for this session.";
   root.append(intro);
 
   const form = document.createElement("form");

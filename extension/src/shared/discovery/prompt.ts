@@ -6,8 +6,33 @@ const MAX_QUOTE_LENGTH = 500;
 
 export interface DiscoveryPromptInput {
   sessionName: string;
+  researchQuery?: string;
+  subreddits?: string[];
   evidence: EvidenceItem[];
   profiles: CommunityProfile[];
+}
+
+export const AUTO_COLLECT_TAG = "auto-collect";
+
+export function discoveryRunTag(runId: string): string {
+  return `run:${runId}`;
+}
+
+export function isAutoCollectedEvidence(item: EvidenceItem): boolean {
+  return item.tags.includes(AUTO_COLLECT_TAG);
+}
+
+export function evidenceForDiscoveryRun(
+  evidence: EvidenceItem[],
+  runId?: string,
+): EvidenceItem[] {
+  const sorted = [...evidence].sort(
+    (a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime(),
+  );
+  if (!runId) return sorted;
+  const runTag = discoveryRunTag(runId);
+  const scoped = sorted.filter((item) => item.tags.includes(runTag));
+  return scoped.length > 0 ? scoped : sorted.filter(isAutoCollectedEvidence);
 }
 
 export function truncateQuote(quote: string): string {
@@ -16,7 +41,7 @@ export function truncateQuote(quote: string): string {
 }
 
 export function selectEvidenceForPrompt(evidence: EvidenceItem[]): EvidenceItem[] {
-  return evidence.slice(0, MAX_EVIDENCE_ITEMS);
+  return evidenceForDiscoveryRun(evidence).slice(0, MAX_EVIDENCE_ITEMS);
 }
 
 export function buildDiscoverySystemPrompt(): string {
@@ -32,6 +57,7 @@ export function buildDiscoverySystemPrompt(): string {
     "- severity is 1 (mild) to 10 (acute).",
     "- Include workaroundPhrases (manual hacks users mention) and buyerSignals (willingness to pay/switch).",
     "- communitySuggestions are optional improvements to community profiles based on evidence.",
+    "- Derive themes only from the evidence provided for this run. Do not invent or recycle themes from prior research.",
   ].join("\n");
 }
 
@@ -56,8 +82,18 @@ export function buildDiscoveryUserPrompt(input: DiscoveryPromptInput): string {
     )
     .join("\n");
 
+  const focus =
+    input.researchQuery?.trim() ||
+    input.sessionName.trim() ||
+    "General founder pain discovery";
+
   return [
     `Session: ${input.sessionName}`,
+    `Research focus: ${focus}`,
+    input.subreddits?.length
+      ? `Target subreddits: ${input.subreddits.map((name) => `r/${name.replace(/^r\//i, "")}`).join(", ")}`
+      : "Target subreddits: (from collected evidence)",
+    "Analyze only the evidence below for this research focus.",
     "",
     "Community profiles:",
     profileBlock || "(none)",

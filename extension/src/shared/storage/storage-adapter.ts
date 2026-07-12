@@ -27,6 +27,7 @@ export interface StorageAdapter {
   ): Promise<{ evidence: EvidenceItem; duplicate: boolean }>;
   listEvidence(sessionId: string): Promise<EvidenceItem[]>;
   removeEvidence(evidenceId: string): Promise<boolean>;
+  removeAutoCollectedEvidence(sessionId: string): Promise<number>;
   createSession(name: string): Promise<ResearchSession>;
   ensureSeedProfiles(): Promise<void>;
   listCommunityProfiles(): Promise<CommunityProfile[]>;
@@ -202,6 +203,17 @@ export function createStorageAdapter(
       if (data.evidence.length === before) return false;
       await write(data);
       return true;
+    },
+    async removeAutoCollectedEvidence(sessionId) {
+      const data = await read();
+      const before = data.evidence.length;
+      data.evidence = data.evidence.filter(
+        (item) =>
+          item.sessionId !== sessionId || !item.tags.includes("auto-collect"),
+      );
+      const removed = before - data.evidence.length;
+      if (removed > 0) await write(data);
+      return removed;
     },
     async createSession(name) {
       const session = createResearchSession(name);

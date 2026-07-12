@@ -3,6 +3,7 @@ import {
   buildDiscoverySystemPrompt,
   buildDiscoveryUserPrompt,
   buildJsonRepairPrompt,
+  evidenceForDiscoveryRun,
 } from "../../shared/discovery/prompt";
 import {
   DiscoveryParseError,
@@ -27,8 +28,15 @@ export interface DiscoveryResult {
   suggestions: CommunityProfileSuggestion[];
 }
 
+export interface DiscoveryRunOptions {
+  researchQuery?: string;
+  subreddits?: string[];
+  runId?: string;
+}
+
 export async function runDiscoveryHandler(
   sessionId?: string,
+  options: DiscoveryRunOptions = {},
 ): Promise<ImplementoResponse<DiscoveryResult>> {
   const resolvedSessionId =
     sessionId ?? (await browserStorageAdapter.getActiveSessionId());
@@ -40,9 +48,16 @@ export async function runDiscoveryHandler(
   const session = sessions.find((item) => item.id === resolvedSessionId);
   if (!session) return fail("Active session not found.");
 
-  const evidence = await browserStorageAdapter.listEvidence(resolvedSessionId);
+  const evidence = evidenceForDiscoveryRun(
+    await browserStorageAdapter.listEvidence(resolvedSessionId),
+    options.runId,
+  );
   if (evidence.length === 0) {
-    return fail("Pin at least one evidence item before running discovery.");
+    return fail(
+      options.runId
+        ? "No evidence collected for this discovery run. Try a broader query or different subreddits."
+        : "Pin at least one evidence item before running discovery.",
+    );
   }
 
   const adapter = await createLlmAdapterForWorker(browserStorageAdapter);
@@ -57,6 +72,8 @@ export async function runDiscoveryHandler(
   const system = buildDiscoverySystemPrompt();
   const user = buildDiscoveryUserPrompt({
     sessionName: session.name,
+    researchQuery: options.researchQuery,
+    subreddits: options.subreddits,
     evidence,
     profiles,
   });

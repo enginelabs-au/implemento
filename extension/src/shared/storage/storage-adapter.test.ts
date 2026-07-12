@@ -136,6 +136,33 @@ describe("storage adapter", () => {
     expect(await adapter.listEvidence(session.id)).toHaveLength(0);
   });
 
+  it("removes only auto-collected evidence for a session", async () => {
+    const adapter = createStorageAdapter(createMemoryStorage());
+    const session = await adapter.createSession("Auto clear");
+    await adapter.addEvidence({
+      sessionId: session.id,
+      redditUrl: "https://reddit.com/r/SaaS/comments/manual",
+      subreddit: "SaaS",
+      quote: "Manual pin",
+      type: "comment",
+      tags: [],
+    });
+    await adapter.addEvidence({
+      sessionId: session.id,
+      redditUrl: "https://reddit.com/r/SaaS/comments/auto",
+      subreddit: "SaaS",
+      quote: "Auto collect",
+      type: "search_result",
+      tags: ["auto-collect"],
+    });
+
+    const removed = await adapter.removeAutoCollectedEvidence(session.id);
+    expect(removed).toBe(1);
+    const remaining = await adapter.listEvidence(session.id);
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].quote).toBe("Manual pin");
+  });
+
   it("seeds community profiles when empty", async () => {
     const adapter = createStorageAdapter(createMemoryStorage());
     await adapter.ensureSeedProfiles();

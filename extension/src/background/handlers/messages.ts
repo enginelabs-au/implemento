@@ -151,21 +151,35 @@ export async function handleMessage(
     }
 
     case "RUN_FULL_DISCOVERY": {
-      const collect = await autoCollectEvidenceHandler(message.sessionId, {
+      const resolvedSessionId =
+        message.sessionId ?? (await browserStorageAdapter.getActiveSessionId());
+      if (!resolvedSessionId) {
+        return fail("Create or select a research session first.");
+      }
+
+      const runId = crypto.randomUUID();
+      const removed = await browserStorageAdapter.removeAutoCollectedEvidence(resolvedSessionId);
+      const collect = await autoCollectEvidenceHandler(resolvedSessionId, {
         query: message.query,
         subreddits: message.subreddits,
+        runId,
       });
       if (!collect.ok) return collect;
 
       const pinned = collect.data?.pinned ?? 0;
-      const duplicates = collect.data?.duplicates ?? 0;
-      if (pinned === 0 && duplicates === 0) {
+      if (pinned === 0) {
+        const clearedNote =
+          removed > 0 ? ` Cleared ${removed} item(s) from the previous discovery run.` : "";
         return fail(
-          "No Reddit evidence found. Try a broader query or different subreddits.",
+          `No new Reddit evidence found for this query.${clearedNote} Try a broader query or different subreddits.`,
         );
       }
 
-      const analysis = await runDiscoveryHandler(message.sessionId);
+      const analysis = await runDiscoveryHandler(resolvedSessionId, {
+        researchQuery: message.query,
+        subreddits: message.subreddits,
+        runId,
+      });
       if (!analysis.ok) {
         const suffix =
           collect.data && collect.data.errors.length > 0
@@ -176,10 +190,12 @@ export async function handleMessage(
 
       await notifyStorageUpdated();
       const themeCount = analysis.data?.themes.length ?? 0;
+      const clearedNote =
+        removed > 0 ? ` Replaced ${removed} prior auto-collected item(s).` : "";
       return ok({
         ...analysis.data,
         collectStats: collect.data,
-        message: `Collected ${pinned} item(s) from Reddit, then found ${themeCount} pain theme(s).`,
+        message: `Collected ${pinned} new item(s) from Reddit, then found ${themeCount} pain theme(s).${clearedNote}`,
       });
     }
 

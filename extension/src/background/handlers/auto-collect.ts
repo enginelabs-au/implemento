@@ -6,6 +6,7 @@ import {
   evidenceFromPageContext,
   type AutoCollectInput,
 } from "../../shared/reddit/auto-collect";
+import { discoveryRunTag } from "../../shared/discovery/prompt";
 import { browserStorageAdapter } from "../../shared/storage/browser-storage";
 import { fetchPageContextFromUrl, sendToActiveRedditTab } from "./tabs";
 
@@ -31,14 +32,18 @@ function sleep(ms: number): Promise<void> {
 async function pinCollectible(
   sessionId: string,
   item: ReturnType<typeof evidenceFromPageContext>[number],
+  runId?: string,
 ): Promise<"pinned" | "duplicate"> {
+  const tags = [...item.tags];
+  if (runId) tags.push(discoveryRunTag(runId));
+
   const result = await browserStorageAdapter.addEvidence({
     sessionId,
     redditUrl: item.redditUrl,
     subreddit: item.subreddit,
     quote: item.quote,
     type: item.type,
-    tags: item.tags,
+    tags,
   });
   return result.duplicate ? "duplicate" : "pinned";
 }
@@ -47,9 +52,10 @@ async function collectFromContext(
   sessionId: string,
   context: PageContext,
   stats: AutoCollectResult,
+  runId?: string,
 ): Promise<void> {
   for (const item of evidenceFromPageContext(context)) {
-    const outcome = await pinCollectible(sessionId, item);
+    const outcome = await pinCollectible(sessionId, item, runId);
     if (outcome === "pinned") stats.pinned += 1;
     else stats.duplicates += 1;
   }
@@ -65,7 +71,7 @@ async function collectFromContext(
         continue;
       }
       for (const item of evidenceFromPageContext(response.data)) {
-        const outcome = await pinCollectible(sessionId, item);
+        const outcome = await pinCollectible(sessionId, item, runId);
         if (outcome === "pinned") stats.pinned += 1;
         else stats.duplicates += 1;
       }
@@ -110,7 +116,7 @@ export async function autoCollectEvidenceHandler(
       );
     }
     stats.sourcesVisited += 1;
-    await collectFromContext(resolvedSessionId, active.data, stats);
+    await collectFromContext(resolvedSessionId, active.data, stats, input.runId);
   } else {
     for (const url of plan.urls) {
       try {
@@ -122,7 +128,7 @@ export async function autoCollectEvidenceHandler(
           continue;
         }
         stats.sourcesVisited += 1;
-        await collectFromContext(resolvedSessionId, response.data, stats);
+        await collectFromContext(resolvedSessionId, response.data, stats, input.runId);
       } catch (error) {
         const message = error instanceof Error ? error.message : "collect failed";
         stats.errors.push(`${url}: ${message}`);
