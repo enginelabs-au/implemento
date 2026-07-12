@@ -20,6 +20,15 @@ export interface ParsedPost {
   comments: ParsedComment[];
 }
 
+export interface ParsedFeedPost {
+  id: string;
+  title: string;
+  snippet: string;
+  subreddit: string;
+  permalink: string;
+  score: number | null;
+}
+
 export interface ParsedSubreddit {
   name: string;
   title: string;
@@ -52,7 +61,11 @@ export interface PageContextBase {
 
 export type PageContext =
   | (PageContextBase & { pageType: "post"; post: ParsedPost })
-  | (PageContextBase & { pageType: "subreddit"; subredditInfo: ParsedSubreddit })
+  | (PageContextBase & {
+      pageType: "subreddit";
+      subredditInfo: ParsedSubreddit;
+      feedPosts: ParsedFeedPost[];
+    })
   | (PageContextBase & { pageType: "search"; search: ParsedSearch })
   | (PageContextBase & { pageType: "profile"; profile: ParsedProfile })
   | PageContextBase;
@@ -65,7 +78,11 @@ export function isPostPageContext(
 
 export function isSubredditPageContext(
   context: PageContext | null | undefined,
-): context is PageContextBase & { pageType: "subreddit"; subredditInfo: ParsedSubreddit } {
+): context is PageContextBase & {
+  pageType: "subreddit";
+  subredditInfo: ParsedSubreddit;
+  feedPosts: ParsedFeedPost[];
+} {
   return Boolean(
     context && context.pageType === "subreddit" && "subredditInfo" in context,
   );

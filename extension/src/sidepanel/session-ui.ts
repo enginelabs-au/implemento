@@ -3,7 +3,10 @@ import type { PageContext } from "../shared/reddit/types";
 import { sendMessage } from "../shared/messages/client";
 import { STORAGE_UPDATED_EVENT } from "../shared/messages/types";
 
+import { createLabeledFieldWithWand } from "./suggest-ui";
+
 export interface SessionUiCallbacks {
+  llmConfigured?: boolean;
   onFeedback: (message: string) => void;
 }
 
@@ -94,8 +97,16 @@ export function renderSessionControls(
     }
   });
 
-  createRow.append(input, createBtn);
-  root.append(createRow);
+  const nameField = createLabeledFieldWithWand("New session", input, "session_name", {
+    enabled: callbacks.llmConfigured ?? false,
+    onApplied: () => callbacks.onFeedback("Session name suggestion applied."),
+  });
+  nameField.addEventListener("implemento:suggest-error", (event) => {
+    callbacks.onFeedback((event as CustomEvent<string>).detail);
+  });
+
+  createRow.append(createBtn);
+  root.append(nameField, createRow);
 }
 
 export function listenForStorageUpdates(onUpdate: () => void): void {

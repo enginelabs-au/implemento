@@ -17,8 +17,8 @@ import {
   renderPhase0FromVariables,
 } from "../../shared/planning/render";
 import {
-  createLlmAdapter,
-  settingsFromStorage,
+  createLlmAdapterForWorker,
+  type LlmAdapter,
 } from "../../shared/llm/llm-adapter";
 import type { Blueprint, PhasePlan, PhasePlanStatus, ResearchSession } from "../../shared/types/domain";
 import type { ImplementoResponse } from "../../shared/messages/types";
@@ -51,11 +51,10 @@ async function resolveSession(
 }
 
 async function getConfiguredAdapter(): Promise<
-  | { ok: true; adapter: ReturnType<typeof createLlmAdapter> }
+  | { ok: true; adapter: LlmAdapter }
   | { ok: false; error: string }
 > {
-  const settings = await browserStorageAdapter.getLlmSettingsForWorker();
-  const adapter = createLlmAdapter(settingsFromStorage(settings));
+  const adapter = await createLlmAdapterForWorker(browserStorageAdapter);
   if (!adapter.isConfigured()) {
     return { ok: false, error: "Configure your LLM API settings before planning." };
   }
@@ -63,7 +62,7 @@ async function getConfiguredAdapter(): Promise<
 }
 
 async function completeWithJsonRepair(
-  adapter: ReturnType<typeof createLlmAdapter>,
+  adapter: LlmAdapter,
   system: string,
   user: string,
   parse: (content: string) => unknown,

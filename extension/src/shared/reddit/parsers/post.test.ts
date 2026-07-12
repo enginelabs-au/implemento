@@ -4,6 +4,7 @@ import { Window } from "happy-dom";
 import { describe, expect, it } from "vitest";
 import { parsePostPage } from "./post";
 import { parseSubredditPage } from "./subreddit";
+import { parseSubredditFeed } from "./feed";
 
 const fixturesDir = resolve(__dirname, "../fixtures");
 
@@ -43,5 +44,21 @@ describe("subreddit parser", () => {
     expect(info.title).toContain("SaaS");
     expect(info.description).toContain("Software as a Service");
     expect(info.subscribers).toBe(128000);
+  });
+
+  it("extracts feed posts from subreddit listing", () => {
+    const html = readFileSync(resolve(fixturesDir, "subreddit.html"), "utf8");
+    const window = new Window();
+    window.document.write(html);
+
+    const feed = parseSubredditFeed(
+      window.document as unknown as Document,
+      "https://www.reddit.com/r/SaaS/",
+    );
+
+    expect(feed).toHaveLength(2);
+    expect(feed[0].title).toContain("validate");
+    expect(feed[0].permalink).toContain("/comments/abc123/");
+    expect(feed[0].snippet).toContain("losing context");
   });
 });

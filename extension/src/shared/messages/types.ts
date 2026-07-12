@@ -7,6 +7,7 @@ import type {
 } from "../types/domain";
 import type { PageContext } from "../reddit/types";
 import type { SaveSettingsInput } from "../llm/llm-adapter";
+import type { SuggestFieldType } from "../suggestions/types";
 
 export type ImplementoMessage =
   | { type: "PING" }
@@ -25,7 +26,27 @@ export type ImplementoMessage =
   | { type: "SAVE_SETTINGS"; settings: SaveSettingsInput }
   | { type: "GET_SETTINGS" }
   | { type: "TEST_LLM_CONNECTION" }
+  | {
+      type: "SUGGEST_FIELD";
+      fieldType: SuggestFieldType;
+      sessionId?: string;
+      subreddit?: string;
+      currentValue?: string;
+      variationSeed?: string;
+    }
   | { type: "RUN_DISCOVERY"; sessionId?: string }
+  | {
+      type: "AUTO_COLLECT_EVIDENCE";
+      sessionId?: string;
+      query?: string;
+      subreddits?: string[];
+    }
+  | {
+      type: "RUN_FULL_DISCOVERY";
+      sessionId?: string;
+      query?: string;
+      subreddits?: string[];
+    }
   | { type: "LIST_PAIN_THEMES"; sessionId: string }
   | { type: "LIST_COMMUNITY_PROFILES" }
   | { type: "UPDATE_COMMUNITY_PROFILE"; profile: CommunityProfile }

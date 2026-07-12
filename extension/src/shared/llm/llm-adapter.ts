@@ -1,43 +1,55 @@
 import type { LlmCompletionRequest, LlmCompletionResponse, LlmSettings } from "./types";
 import { NotConfiguredError } from "./types";
-import { callChatCompletions } from "./openai-client";
+import {
+  completeWithRouter,
+  isLlmRuntimeConfigured,
+  resolveLlmRuntime,
+  type HardTaskSpendState,
+} from "./router";
+import { BUILD_LLM_SECRETS } from "./secrets.generated";
+import { GEMINI_MODEL_OPTIONS } from "./model-config";
 
 export interface LlmAdapter {
   isConfigured(): boolean;
   complete(request: LlmCompletionRequest): Promise<LlmCompletionResponse>;
 }
 
-export function createLlmAdapter(settings: LlmSettings): LlmAdapter {
-  const isConfigured = Boolean(settings.apiUrl && settings.apiKey && settings.model);
+export interface LlmAdapterDependencies {
+  getHardTaskSpend?: () => Promise<HardTaskSpendState | undefined>;
+  setHardTaskSpend?: (state: HardTaskSpendState) => Promise<void>;
+}
+
+export function createLlmAdapter(
+  settings: LlmSettings,
+  deps: LlmAdapterDependencies = {},
+): LlmAdapter {
+  const runtime = resolveLlmRuntime({
+    llmModel: settings.model,
+    llmTemperature: settings.temperature,
+    llmApiKey: settings.apiKey,
+  });
+  const isConfigured = isLlmRuntimeConfigured(runtime);
 
   return {
     isConfigured() {
       return isConfigured;
     },
     async complete(request: LlmCompletionRequest): Promise<LlmCompletionResponse> {
-      if (!isConfigured || !settings.apiUrl || !settings.apiKey || !settings.model) {
+      if (!isConfigured) {
         throw new NotConfiguredError(
-          "Configure API URL, API key, and model in Implemento settings.",
+          "LLM is not configured. Rebuild the extension after setting GEMINI_API_KEY and OPENROUTER_API_KEY in .env.",
         );
       }
 
-      const result = await callChatCompletions({
-        apiUrl: settings.apiUrl,
-        apiKey: settings.apiKey,
-        model: settings.model,
-        temperature: settings.temperature ?? request.temperature,
-        system: request.system,
-        user: request.user,
+      return completeWithRouter(runtime, request, {
+        hardTaskSpend: deps.getHardTaskSpend ? await deps.getHardTaskSpend() : undefined,
+        onHardTaskSpend: deps.setHardTaskSpend,
       });
-
-      return { content: result.content };
     },
   };
 }
 
 export const LLM_SETTING_KEYS = {
-  apiUrl: "IMPLEMENTO_LLM_API_URL",
-  apiKey: "IMPLEMENTO_LLM_API_KEY",
   model: "IMPLEMENTO_LLM_MODEL",
   temperature: "IMPLEMENTO_LLM_TEMPERATURE",
 } as const;
@@ -49,18 +61,18 @@ export function settingsFromStorage(settings: {
   llmTemperature?: number;
 }): LlmSettings {
   return {
-    apiUrl: settings.llmApiUrl,
-    apiKey: settings.llmApiKey,
-    model: settings.llmModel,
-    temperature: settings.llmTemperature,
+    apiUrl: settings.llmApiUrl ?? BUILD_LLM_SECRETS.geminiApiUrl,
+    apiKey: settings.llmApiKey ?? BUILD_LLM_SECRETS.geminiApiKey,
+    model: settings.llmModel ?? BUILD_LLM_SECRETS.defaultModel,
+    temperature: settings.llmTemperature ?? BUILD_LLM_SECRETS.defaultTemperature,
   };
 }
 
 export interface PublicLlmSettings {
   configured: boolean;
-  apiUrl?: string;
   model?: string;
   temperature?: number;
+  models: Array<{ id: string; label: string }>;
 }
 
 export function toPublicSettings(settings: {
@@ -69,17 +81,40 @@ export function toPublicSettings(settings: {
   llmModel?: string;
   llmTemperature?: number;
 }): PublicLlmSettings {
+  const runtime = resolveLlmRuntime({
+    llmModel: settings.llmModel,
+    llmTemperature: settings.llmTemperature,
+    llmApiKey: settings.llmApiKey,
+  });
   return {
-    configured: Boolean(settings.llmApiUrl && settings.llmApiKey && settings.llmModel),
-    apiUrl: settings.llmApiUrl,
-    model: settings.llmModel,
-    temperature: settings.llmTemperature,
+    configured: isLlmRuntimeConfigured(runtime),
+    model: runtime.preferredModel,
+    temperature: runtime.temperature,
+    models: GEMINI_MODEL_OPTIONS,
   };
 }
 
 export interface SaveSettingsInput {
-  apiUrl: string;
-  apiKey?: string;
   model: string;
-  temperature?: number;
+}
+
+export interface LlmWorkerStorage {
+  getLlmSettingsForWorker(): Promise<{
+    llmApiUrl?: string;
+    llmApiKey?: string;
+    llmModel?: string;
+    llmTemperature?: number;
+  }>;
+  getHardTaskSpend(): Promise<HardTaskSpendState | undefined>;
+  setHardTaskSpend(state: HardTaskSpendState): Promise<void>;
+}
+
+export async function createLlmAdapterForWorker(
+  storage: LlmWorkerStorage,
+): Promise<LlmAdapter> {
+  const settings = await storage.getLlmSettingsForWorker();
+  return createLlmAdapter(settingsFromStorage(settings), {
+    getHardTaskSpend: () => storage.getHardTaskSpend(),
+    setHardTaskSpend: (state) => storage.setHardTaskSpend(state),
+  });
 }

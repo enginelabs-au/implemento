@@ -8,6 +8,9 @@
     "node": ">=20"
   },
   "scripts": {
+    "predev": "node scripts/sync-llm-env.mjs && node scripts/generate-icons.mjs",
+    "prebuild": "node scripts/sync-llm-env.mjs && node scripts/generate-icons.mjs",
+    "pretest": "node scripts/sync-llm-env.mjs",
     "dev": "vite --config extension/vite.config.ts",
     "build": "tsc --noEmit && vite build --config extension/vite.config.ts",
     "lint": "eslint extension/src",

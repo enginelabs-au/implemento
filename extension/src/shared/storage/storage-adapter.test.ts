@@ -170,13 +170,10 @@ describe("storage adapter", () => {
   it("masks api key in public settings", async () => {
     const adapter = createStorageAdapter(createMemoryStorage());
     await adapter.saveSettings({
-      apiUrl: "https://api.example.com/v1",
-      apiKey: "secret",
-      model: "gpt-test",
-      temperature: 0.2,
+      model: "gemini-3.5-flash",
     });
     const publicSettings = await adapter.getPublicSettings();
-    expect(publicSettings.configured).toBe(true);
+    expect(publicSettings.model).toBe("gemini-3.5-flash");
     expect(JSON.stringify(publicSettings)).not.toContain("secret");
   });
 

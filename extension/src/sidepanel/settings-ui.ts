@@ -5,8 +5,8 @@ import type { SaveSettingsInput } from "../shared/llm/llm-adapter";
 export async function loadPublicSettings(): Promise<PublicLlmSettings> {
   const response = await sendMessage<PublicLlmSettings>({ type: "GET_SETTINGS" });
   return response.ok
-    ? (response.data ?? { configured: false })
-    : { configured: false };
+    ? (response.data ?? { configured: false, models: [] })
+    : { configured: false, models: [] };
 }
 
 export async function saveSettings(
@@ -19,9 +19,9 @@ export async function saveSettings(
   if (!response.ok) return { ok: false, message: response.error };
   const permissionNote =
     response.data?.permissionGranted === false
-      ? " Settings saved, but API host permission was not granted."
+      ? " Model saved, but API host permissions were not granted."
       : "";
-  return { ok: true, message: `Settings saved.${permissionNote}` };
+  return { ok: true, message: `Model preference saved.${permissionNote}` };
 }
 
 export async function testLlmConnection(): Promise<string> {
@@ -40,51 +40,42 @@ export function renderSettingsUi(
   const status = document.createElement("p");
   status.className = settings.configured ? "status-ok" : "status-warn";
   status.textContent = settings.configured
-    ? "LLM configured"
-    : "LLM not configured — add settings to run discovery";
+    ? "LLM configured from build environment (Gemini + OpenRouter)"
+    : "LLM not configured — set GEMINI_API_KEY and OPENROUTER_API_KEY in .env, then rebuild";
   root.append(status);
+
+  const note = document.createElement("p");
+  note.className = "hint";
+  note.textContent =
+    "Temperature 0.2 and max reasoning are applied automatically. Fallback: Gemini chain → GPT-5.4 Nano → GPT-5.6 Sol Pro (max $1/day, only after all others fail).";
+  root.append(note);
 
   const form = document.createElement("form");
   form.id = "settings-form";
 
-  const apiUrl = document.createElement("input");
-  apiUrl.type = "url";
-  apiUrl.id = "settings-api-url";
-  apiUrl.placeholder = "https://api.openai.com/v1";
-  apiUrl.value = settings.apiUrl ?? "https://api.openai.com/v1";
+  const modelSelect = document.createElement("select");
+  modelSelect.id = "settings-model";
+  const options = settings.models?.length
+    ? settings.models
+    : [{ id: "gemini-3.5-flash", label: "Gemini 3.5 Flash (default)" }];
+  for (const option of options) {
+    const el = document.createElement("option");
+    el.value = option.id;
+    el.textContent = option.label;
+    if (option.id === (settings.model ?? "gemini-3.5-flash")) {
+      el.selected = true;
+    }
+    modelSelect.append(el);
+  }
 
-  const apiKey = document.createElement("input");
-  apiKey.type = "password";
-  apiKey.id = "settings-api-key";
-  apiKey.placeholder = settings.configured ? "•••••••• (unchanged if blank)" : "API key";
-
-  const model = document.createElement("input");
-  model.type = "text";
-  model.id = "settings-model";
-  model.placeholder = "gpt-4o-mini";
-  model.value = settings.model ?? "gpt-4o-mini";
-
-  const temperature = document.createElement("input");
-  temperature.type = "number";
-  temperature.id = "settings-temperature";
-  temperature.min = "0";
-  temperature.max = "1";
-  temperature.step = "0.1";
-  temperature.value = String(settings.temperature ?? 0.2);
-
-  form.append(
-    createField("API URL", apiUrl),
-    createField("API key", apiKey),
-    createField("Model", model),
-    createField("Temperature", temperature),
-  );
+  form.append(createField("Preferred Gemini model", modelSelect));
 
   const actions = document.createElement("div");
   actions.className = "button-row";
 
   const saveBtn = document.createElement("button");
   saveBtn.type = "submit";
-  saveBtn.textContent = "Save settings";
+  saveBtn.textContent = "Save model";
 
   const testBtn = document.createElement("button");
   testBtn.type = "button";
@@ -100,15 +91,9 @@ export function renderSettingsUi(
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const result = await saveSettings({
-      apiUrl: apiUrl.value,
-      apiKey: apiKey.value,
-      model: model.value,
-      temperature: Number(temperature.value),
-    });
+    const result = await saveSettings({ model: modelSelect.value });
     onFeedback(result.message);
     if (result.ok) {
-      apiKey.value = "";
       document.dispatchEvent(new CustomEvent("implemento:refresh"));
     }
   });

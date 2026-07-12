@@ -56,6 +56,8 @@ export interface StorageAdapter {
   getPublicSettings(): Promise<PublicLlmSettings>;
   saveSettings(input: SaveSettingsInput): Promise<PublicLlmSettings>;
   getLlmSettingsForWorker(): Promise<ImplementoStorageSchema["settings"]>;
+  getHardTaskSpend(): Promise<{ date: string; usd: number } | undefined>;
+  setHardTaskSpend(state: { date: string; usd: number }): Promise<void>;
 }
 
 type ChromeStorageLocal = {
@@ -333,18 +335,22 @@ export function createStorageAdapter(
     },
     async saveSettings(input) {
       const data = await read();
-      data.settings.llmApiUrl = input.apiUrl.trim();
       data.settings.llmModel = input.model.trim();
-      data.settings.llmTemperature = input.temperature;
-      if (input.apiKey && input.apiKey.trim()) {
-        data.settings.llmApiKey = input.apiKey.trim();
-      }
       await write(data);
       return toPublicSettings(data.settings);
     },
     async getLlmSettingsForWorker() {
       const data = await read();
       return data.settings;
+    },
+    async getHardTaskSpend() {
+      const data = await read();
+      return data.settings.llmHardTaskSpend;
+    },
+    async setHardTaskSpend(state) {
+      const data = await read();
+      data.settings.llmHardTaskSpend = state;
+      await write(data);
     },
   };
 }

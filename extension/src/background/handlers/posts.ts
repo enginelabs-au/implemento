@@ -8,8 +8,8 @@ import { PostParseError, parsePostDraftsResponse } from "../../shared/posts/pars
 import { applyEthicsToDraft, PostEthicsError } from "../../shared/posts/ethics";
 import { normalizeSubreddit } from "../../shared/posts/schema";
 import {
-  createLlmAdapter,
-  settingsFromStorage,
+  createLlmAdapterForWorker,
+  type LlmAdapter,
 } from "../../shared/llm/llm-adapter";
 import type { PostDraft, ResearchSession } from "../../shared/types/domain";
 import type { ImplementoResponse } from "../../shared/messages/types";
@@ -43,9 +43,11 @@ async function resolveSession(
   return { ok: true, session, sessionId: resolvedSessionId };
 }
 
-async function getConfiguredAdapter() {
-  const settings = await browserStorageAdapter.getLlmSettingsForWorker();
-  const adapter = createLlmAdapter(settingsFromStorage(settings));
+async function getConfiguredAdapter(): Promise<
+  | { ok: true; adapter: LlmAdapter }
+  | { ok: false; error: string }
+> {
+  const adapter = await createLlmAdapterForWorker(browserStorageAdapter);
   if (!adapter.isConfigured()) {
     return { ok: false as const, error: "Configure your LLM API settings before generating posts." };
   }

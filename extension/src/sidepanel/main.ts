@@ -1,11 +1,15 @@
 import {
   applyProfileSuggestion,
+  autoCollectEvidence,
   loadCommunityProfiles,
   loadPainThemes,
   renderDiscoveryUi,
   renderProfilesUi,
   runDiscovery,
+  runFullDiscovery,
+  type DiscoveryPrefs,
 } from "./discovery-ui";
+import { isDiscoveryBusy } from "./discovery-operation";
 import {
   generateBlueprint,
   generatePhase0,
@@ -24,11 +28,14 @@ import { loadPublicSettings, renderSettingsUi } from "./settings-ui";
 import { exportSessionBundle, importSessionBundle, renderBundleUi } from "./bundle-ui";
 import { renderSamplePhase0Plan } from "../shared/templates/engine";
 import type { CommunityProfileSuggestion } from "../shared/types/domain";
+import { createLabeledFieldWithWand } from "./suggest-ui";
 import {
+  createSession,
   listenForStorageUpdates,
   loadActiveSession,
   loadSessions,
   renderSessionControls,
+  setActiveSession,
 } from "./session-ui";
 import {
   pinComment,
@@ -79,6 +86,19 @@ const bundlePanel = document.getElementById("bundle-panel");
 let pendingSuggestions: CommunityProfileSuggestion[] = [];
 let projectTitle = "";
 let selectedSubreddits: string[] = [];
+let discoveryPrefs: DiscoveryPrefs = { query: "", subreddits: "SaaS, startups" };
+
+function setDiscoveryFeedback(message: string, ok?: boolean): void {
+  const el = document.getElementById("discovery-feedback");
+  if (!el) return;
+  el.textContent = message;
+  if (!message) {
+    el.className = "";
+    return;
+  }
+  el.className =
+    ok === false ? "discovery-result-error" : ok === true ? "discovery-result-ok" : "";
+}
 
 const state: CaptureUiState = {
   pageContext: null,
@@ -87,13 +107,28 @@ const state: CaptureUiState = {
   activeSessionId: null,
 };
 
+async function ensureDefaultSession(): Promise<void> {
+  const sessions = await loadSessions();
+  if (sessions.length === 0) {
+    await createSession("My research");
+    return;
+  }
+  const active = await loadActiveSession();
+  if (!active && sessions[0]) {
+    await setActiveSession(sessions[0].id);
+  }
+}
+
 async function refreshAll(): Promise<void> {
+  await ensureDefaultSession();
   const sessions = await loadSessions();
   const activeSession = await loadActiveSession();
   state.activeSessionId = activeSession?.id ?? null;
+  const publicSettings = await loadPublicSettings();
 
   if (sessionControls) {
     renderSessionControls(sessionControls, sessions, activeSession, {
+      llmConfigured: publicSettings.configured,
       onFeedback: (message) => setFeedback("capture-feedback", message),
     });
   }
@@ -162,7 +197,6 @@ async function refreshAll(): Promise<void> {
   state.evidence = await refreshEvidence(state.activeSessionId);
   if (evidenceList) renderEvidenceList(evidenceList, state.evidence);
 
-  const publicSettings = await loadPublicSettings();
   if (settingsPanel) {
     renderSettingsUi(settingsPanel, publicSettings, (message) =>
       setFeedback("settings-feedback", message),
@@ -171,9 +205,11 @@ async function refreshAll(): Promise<void> {
 
   const profiles = await loadCommunityProfiles();
   if (profilesPanel) {
-    renderProfilesUi(profilesPanel, profiles, (message) =>
-      setFeedback("discovery-feedback", message),
-    );
+    renderProfilesUi(profilesPanel, profiles, {
+      llmConfigured: publicSettings.configured,
+      sessionId: state.activeSessionId,
+      onFeedback: (message) => setFeedback("discovery-feedback", message),
+    });
   }
 
   const themes = state.activeSessionId
@@ -181,32 +217,63 @@ async function refreshAll(): Promise<void> {
     : [];
 
   if (discoveryPanel) {
+    if (!discoveryPrefs.query && activeSession) {
+      discoveryPrefs = {
+        ...discoveryPrefs,
+        query: activeSession.name,
+      };
+    }
+
     renderDiscoveryUi(
       discoveryPanel,
       themes,
       state.evidence,
       pendingSuggestions,
       publicSettings.configured,
-      state.evidence.length > 0,
+      Boolean(state.activeSessionId),
+      state.activeSessionId,
+      discoveryPrefs,
+      (prefs) => {
+        discoveryPrefs = prefs;
+      },
+      (message, ok) => setDiscoveryFeedback(message, ok),
+      async (prefs) => {
+        if (!state.activeSessionId) {
+          return { ok: false, message: "Select a session first." };
+        }
+        discoveryPrefs = prefs;
+        const result = await runFullDiscovery(state.activeSessionId, prefs);
+        if (result.suggestions) {
+          pendingSuggestions = result.suggestions;
+        }
+        return result;
+      },
+      async (prefs) => {
+        if (!state.activeSessionId) {
+          return { ok: false, message: "Select a session first." };
+        }
+        discoveryPrefs = prefs;
+        return autoCollectEvidence(state.activeSessionId, prefs);
+      },
       async () => {
         if (!state.activeSessionId) {
-          setFeedback("discovery-feedback", "Select a session first.");
-          return;
+          return { ok: false, message: "Select a session first." };
         }
-        setFeedback("discovery-feedback", "Analyzing session…");
         const result = await runDiscovery(state.activeSessionId);
-        pendingSuggestions = result.suggestions;
-        setFeedback("discovery-feedback", result.message);
-        await refreshAll();
+        if (result.suggestions) {
+          pendingSuggestions = result.suggestions;
+        }
+        return result;
       },
       async (suggestion) => {
         const message = await applyProfileSuggestion(suggestion);
-        setFeedback("discovery-feedback", message);
+        setDiscoveryFeedback(message, message.includes("saved") || message.includes("applied"));
         pendingSuggestions = pendingSuggestions.filter(
           (item) => item.subreddit !== suggestion.subreddit,
         );
         await refreshAll();
       },
+      refreshAll,
     );
   }
 
@@ -224,6 +291,7 @@ async function refreshAll(): Promise<void> {
     renderPlanningUi(planningPanel, {
       configured: publicSettings.configured,
       hasThemes: themes.length > 0,
+      sessionId: state.activeSessionId,
       projectTitle,
       blueprint,
       phase0,
@@ -395,6 +463,7 @@ document.getElementById("export-sample")?.addEventListener("click", () => {
 });
 
 listenForStorageUpdates(() => {
+  if (isDiscoveryBusy()) return;
   void refreshAll();
 });
 

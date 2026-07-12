@@ -104,6 +104,9 @@ export interface ImplementoStorageSchema {
     llmApiKey?: string;
     llmModel?: string;
     llmTemperature?: number;
+    llmHardTaskSpend?: { date: string; usd: number };
+    discoveryQuery?: string;
+    discoverySubreddits?: string;
     activeSessionId?: string;
   };
 }

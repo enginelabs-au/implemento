@@ -2,15 +2,15 @@
 
 ## Current Objective
 
-- **Implemento MVP complete** — Chrome MV3 extension for Reddit discovery → planning → post drafts (v1.0.0).
+- **LLM preferences wired** — env-backed keys, model dropdown, automatic fallback chain with hard-task cap.
 
 ## Current Status
 
-- **Project MVP complete** — Phase 5 hardening-release implemented and verified. Human-only items remain in final checklist.
+- LLM router + `.env` sync + simplified settings UI implemented. **58/58 tests**; build pass.
 
 ## Project Phase
 
-- All planned phases complete (0–5). No further phase plans.
+- Post-MVP enhancement: LLM configuration from `.env` (no manual URL/key entry).
 
 ## Active Plan
 
@@ -18,45 +18,42 @@
 
 ## Active Instructions
 
-- None (PROJECT_PLANNING lifecycle closed for MVP scope)
+- None
 
 ## Active Items
 
-- Strategy blueprint: `docs/blueprints/2026-07-11_implemento.md`
-- Final checklist: `docs/plans/final_implementation_checklist.md`
-- ADRs: `0001`–`0006`
-- Release docs: `docs/privacy-policy.md`, `docs/store-listing.md`
+- `scripts/sync-llm-env.mjs` → `extension/src/shared/llm/secrets.generated.ts` (gitignored)
+- `extension/src/shared/llm/router.ts` — Gemini chain → Nano → Sol Pro ($1/day cap)
+- `extension/src/sidepanel/settings-ui.ts` — model dropdown only
 
 ## Files in Active Use
 
-- `docs/plans/final_implementation_checklist.md`
-- `extension/` (v1.0.0)
-- `README.md`
+- `.env`, `env.example`
+- `extension/src/shared/llm/*`
+- `extension/src/sidepanel/settings-ui.ts`
 
 ## Open Blockers
 
-- None for agent work. Store submission, OAuth live path, and manual E2E deferred to checklist.
+- None for agent work. User must reload `dist/` in Chrome after build.
 
 ## Attempts Performed
 
-- 2026-07-11 — Phases 0–4 implemented and verified.
-- 2026-07-11 — Phase 5 implemented: bundle export/import, CI, docs, OAuth stub, v1.0.0.
-- 2026-07-11 — Validation: lint/typecheck/test/build pass; 55/55 tests.
+- 2026-07-13 — LLM env sync, router fallback, settings dropdown; 58/58 tests; build pass.
 
 ## Decisions and Assumptions
 
-- v1.0.0 marks MVP feature-complete per ADR 0006.
-- JSON bundle excludes settings secrets; OAuth remains stub-only in v1.
+- Temperature fixed at 0.2 from env; reasoning always max (Gemini `high`, OpenRouter `pro` for Sol).
+- Sol Pro only after full chain fails; daily spend tracked in `chrome.storage.local`.
 
 ## Current Working State
 
-- Sideload-ready `dist/` v1.0.0. CI workflow at `.github/workflows/ci.yml`.
+- Sideload-ready `dist/` with baked-in keys from local `.env` after `npm run build`.
 
 ## Next Actions
 
-1. Human: complete items in `docs/plans/final_implementation_checklist.md` (LLM key, E2E smoke, store submission).
-2. Post-v1 work tracked only in checklist or new out-of-band plans — no phase 6.
+1. User: reload extension from `dist/` in Chrome; pick preferred Gemini model in side panel.
+2. Human checklist items unchanged (E2E smoke, store submission).
 
 ## Last Updated
 
-- 2026-07-11 — Phase 5 complete; project MVP complete.
+- 2026-07-13 — LLM preferences wired from `.env`.

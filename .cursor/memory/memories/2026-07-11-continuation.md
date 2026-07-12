@@ -90,3 +90,11 @@
 - Version 1.0.0 (manifest + package.json); README hardening.
 - Validation: 55/55 tests; lint/typecheck/build pass; `dist/` v1.0.0.
 - **Project MVP complete** — human-only items in final checklist.
+
+## LLM env wiring (2026-07-13)
+
+- Added `scripts/sync-llm-env.mjs` (prebuild/predev/pretest) → gitignored `secrets.generated.ts`.
+- Router: Gemini chain from dropdown → `gpt-5.4-nano` → `gpt-5.6-sol-pro` (max $1/day, after all fail).
+- Settings UI: model dropdown only; temp 0.2 + max reasoning automatic.
+- Populated `.env` IMPLEMENTO_* from GEMINI/OPENROUTER keys; model `gemini-3.5-flash`.
+- Validation: 58/58 tests; build pass.

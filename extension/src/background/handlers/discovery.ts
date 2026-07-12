@@ -9,8 +9,7 @@ import {
   parseDiscoveryResponse,
 } from "../../shared/discovery/parser";
 import {
-  createLlmAdapter,
-  settingsFromStorage,
+  createLlmAdapterForWorker,
 } from "../../shared/llm/llm-adapter";
 import type { CommunityProfileSuggestion, PainTheme } from "../../shared/types/domain";
 import type { ImplementoResponse } from "../../shared/messages/types";
@@ -46,8 +45,7 @@ export async function runDiscoveryHandler(
     return fail("Pin at least one evidence item before running discovery.");
   }
 
-  const settings = await browserStorageAdapter.getLlmSettingsForWorker();
-  const adapter = createLlmAdapter(settingsFromStorage(settings));
+  const adapter = await createLlmAdapterForWorker(browserStorageAdapter);
   if (!adapter.isConfigured()) {
     return fail("Configure your LLM API settings before analyzing.");
   }

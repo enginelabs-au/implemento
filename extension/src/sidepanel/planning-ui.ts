@@ -69,11 +69,14 @@ function previewMarkdown(markdown: string, maxLength = 600): string {
   return `${markdown.slice(0, maxLength)}…`;
 }
 
+import { createLabeledFieldWithWand } from "./suggest-ui";
+
 export function renderPlanningUi(
   root: HTMLElement,
   options: {
     configured: boolean;
     hasThemes: boolean;
+    sessionId: string | null;
     projectTitle: string;
     blueprint: Blueprint | null;
     phase0: PhasePlan | null;
@@ -87,8 +90,6 @@ export function renderPlanningUi(
 ): void {
   root.replaceChildren();
 
-  const titleField = document.createElement("label");
-  titleField.textContent = "Project title";
   const titleInput = document.createElement("input");
   titleInput.type = "text";
   titleInput.id = "project-title";
@@ -97,7 +98,14 @@ export function renderPlanningUi(
   titleInput.addEventListener("input", () => {
     options.onProjectTitleChange(titleInput.value);
   });
-  titleField.append(titleInput);
+  const titleField = createLabeledFieldWithWand("Project title", titleInput, "project_title", {
+    enabled: options.configured,
+    sessionId: options.sessionId,
+    onApplied: () => options.onProjectTitleChange(titleInput.value),
+  });
+  titleField.addEventListener("implemento:suggest-error", () => {
+    // Parent can surface via planning-feedback if wired later.
+  });
   root.append(titleField);
 
   const actions = document.createElement("div");

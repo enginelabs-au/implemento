@@ -15,6 +15,7 @@ describe("openai client", () => {
         apiUrl: "https://api.example.com/v1",
         apiKey: "test-key",
         model: "gpt-test",
+        provider: "gemini",
         system: "sys",
         user: "user",
       },

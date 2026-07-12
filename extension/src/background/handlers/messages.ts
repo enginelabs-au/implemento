@@ -12,6 +12,7 @@ import {
   applyProfileSuggestionHandler,
   runDiscoveryHandler,
 } from "./discovery";
+import { autoCollectEvidenceHandler } from "./auto-collect";
 import {
   generateBlueprintHandler,
   generatePhase0Handler,
@@ -27,6 +28,7 @@ import {
   exportSessionBundleHandler,
   importSessionBundleHandler,
 } from "./bundle";
+import { suggestFieldHandler } from "./suggestions";
 import {
   getSettingsHandler,
   saveSettingsHandler,
@@ -124,10 +126,61 @@ export async function handleMessage(
     case "TEST_LLM_CONNECTION":
       return testLlmConnectionHandler();
 
+    case "SUGGEST_FIELD":
+      return suggestFieldHandler({
+        fieldType: message.fieldType,
+        sessionId: message.sessionId,
+        subreddit: message.subreddit,
+        currentValue: message.currentValue,
+        variationSeed: message.variationSeed,
+      });
+
     case "RUN_DISCOVERY": {
       const result = await runDiscoveryHandler(message.sessionId);
       if (result.ok) await notifyStorageUpdated();
       return result;
+    }
+
+    case "AUTO_COLLECT_EVIDENCE": {
+      const result = await autoCollectEvidenceHandler(message.sessionId, {
+        query: message.query,
+        subreddits: message.subreddits,
+      });
+      if (result.ok) await notifyStorageUpdated();
+      return result;
+    }
+
+    case "RUN_FULL_DISCOVERY": {
+      const collect = await autoCollectEvidenceHandler(message.sessionId, {
+        query: message.query,
+        subreddits: message.subreddits,
+      });
+      if (!collect.ok) return collect;
+
+      const pinned = collect.data?.pinned ?? 0;
+      const duplicates = collect.data?.duplicates ?? 0;
+      if (pinned === 0 && duplicates === 0) {
+        return fail(
+          "No Reddit evidence found. Try a broader query or different subreddits.",
+        );
+      }
+
+      const analysis = await runDiscoveryHandler(message.sessionId);
+      if (!analysis.ok) {
+        const suffix =
+          collect.data && collect.data.errors.length > 0
+            ? ` Collection warnings: ${collect.data.errors.slice(0, 2).join("; ")}`
+            : "";
+        return fail(`${analysis.error}${suffix}`);
+      }
+
+      await notifyStorageUpdated();
+      const themeCount = analysis.data?.themes.length ?? 0;
+      return ok({
+        ...analysis.data,
+        collectStats: collect.data,
+        message: `Collected ${pinned} item(s) from Reddit, then found ${themeCount} pain theme(s).`,
+      });
     }
 
     case "LIST_PAIN_THEMES": {

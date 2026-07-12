@@ -1,11 +1,10 @@
 import { browserStorageAdapter } from "../../shared/storage/browser-storage";
 import {
-  createLlmAdapter,
-  settingsFromStorage,
+  createLlmAdapterForWorker,
   type PublicLlmSettings,
   type SaveSettingsInput,
 } from "../../shared/llm/llm-adapter";
-import { extractApiOriginPattern } from "../../shared/llm/openai-client";
+import { LLM_HOST_ORIGINS } from "../../shared/llm/model-config";
 import type { ImplementoResponse } from "../../shared/messages/types";
 
 function ok<T>(data?: T): ImplementoResponse<T> {
@@ -19,18 +18,17 @@ function fail(error: string): ImplementoResponse<never> {
 export async function saveSettingsHandler(
   input: SaveSettingsInput,
 ): Promise<ImplementoResponse<PublicLlmSettings & { permissionGranted?: boolean }>> {
-  if (!input.apiUrl.trim() || !input.model.trim()) {
-    return fail("API URL and model are required.");
+  if (!input.model.trim()) {
+    return fail("Model is required.");
   }
 
   const publicSettings = await browserStorageAdapter.saveSettings(input);
-  const originPattern = extractApiOriginPattern(input.apiUrl);
   let permissionGranted = true;
 
-  if (originPattern && chrome.permissions?.request) {
+  if (chrome.permissions?.request) {
     try {
       permissionGranted = await chrome.permissions.request({
-        origins: [originPattern],
+        origins: [...LLM_HOST_ORIGINS],
       });
     } catch {
       permissionGranted = false;
@@ -46,10 +44,11 @@ export async function getSettingsHandler(): Promise<ImplementoResponse<PublicLlm
 }
 
 export async function testLlmConnectionHandler(): Promise<ImplementoResponse<{ message: string }>> {
-  const settings = await browserStorageAdapter.getLlmSettingsForWorker();
-  const adapter = createLlmAdapter(settingsFromStorage(settings));
+  const adapter = await createLlmAdapterForWorker(browserStorageAdapter);
   if (!adapter.isConfigured()) {
-    return fail("Configure API URL, API key, and model first.");
+    return fail(
+      "LLM not configured. Set GEMINI_API_KEY and OPENROUTER_API_KEY in .env, then run npm run build.",
+    );
   }
 
   try {

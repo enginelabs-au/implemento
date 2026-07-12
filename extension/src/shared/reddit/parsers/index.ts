@@ -7,6 +7,7 @@ import { parsePostPage } from "./post";
 import { parseProfilePage } from "./profile";
 import { parseSearchPage } from "./search";
 import { parseSubredditPage } from "./subreddit";
+import { parseSubredditFeed } from "./feed";
 
 export function parsePageContext(doc: Document, url: string): PageContext {
   const pageType = detectPageTypeFromUrl(url);
@@ -25,11 +26,13 @@ export function parsePageContext(doc: Document, url: string): PageContext {
       };
     case "subreddit": {
       const subredditInfo = parseSubredditPage(doc, url);
+      const feedPosts = parseSubredditFeed(doc, url);
       return {
         ...base,
         pageType,
         subreddit: subredditInfo.name || subreddit,
         subredditInfo,
+        feedPosts,
       };
     }
     case "search":
@@ -55,4 +58,4 @@ export function parsePageContext(doc: Document, url: string): PageContext {
   }
 }
 
-export { parsePostPage, parseSubredditPage, parseSearchPage, parseProfilePage };
+export { parsePostPage, parseSubredditPage, parseSearchPage, parseProfilePage, parseSubredditFeed };
